@@ -1,5 +1,6 @@
 import os
 import json
+from datetime import datetime, timedelta
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -17,3 +18,13 @@ def save_json(path_income, data):
     path = os.path.join(BASE_DIR, 'data', path_income)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
+
+
+def is_fresh(ts_str):
+    ts = datetime.fromisoformat(ts_str)
+    return datetime.now() - ts < timedelta(minutes=5)
+
+
+def fetch_rate(from_code, to_code):
+    # Заглушка на реальный ParserService, пока не понятно чё писать то.
+    return None

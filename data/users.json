@@ -1,23 +1,9 @@
 [
     {
         "user_id": 1,
-        "username": "alice",
+        "username": "gol43",
         "hashed_password": "55207d90efbf7073085ce72fdc3fc905a7641e8ca4c15b641a86f389fc40e60b",
         "salt": "haleluya2003",
-        "registration_date": "2025-11-08T15:51:55.903977"
-    },
-    {
-        "user_id": 2,
-        "username": "alice_sad",
-        "hashed_password": "55207d90efbf7073085ce72fdc3fc905a7641e8ca4c15b641a86f389fc40e60b",
-        "salt": "haleluya2003",
-        "registration_date": "2025-11-08T15:52:05.985008"
-    },
-    {
-        "user_id": 3,
-        "username": "damir",
-        "hashed_password": "55207d90efbf7073085ce72fdc3fc905a7641e8ca4c15b641a86f389fc40e60b",
-        "salt": "haleluya2003",
-        "registration_date": "2025-11-08T15:55:54.589601"
+        "registration_date": "2025-11-09T13:09:58.147677"
     }
 ]

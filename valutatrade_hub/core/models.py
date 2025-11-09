@@ -18,8 +18,8 @@ class User:
     @username.setter
     def username(self, value):
         v = value.strip()
-        if not v: 
-            raise ValueError("Имя пользователя не может быть пустым.")
+        if not v:
+            raise  ValueError("Имя пользователя не может быть пустым.")
         self._username = v
 
     @property
@@ -29,7 +29,7 @@ class User:
     @password.setter
     def password(self, value):
         if len(value) < 4:
-            raise ValueError("Пароль должен быть не короче 4 символов.")
+            raise  ValueError("Пароль должен быть не короче 4 символов.")
         self._hashed_password = self._hash(value)
         
     @property
@@ -50,8 +50,8 @@ class User:
             "registration_date": self._registration_date.isoformat()
         }
 
-    def verify_password(self, password):
-        return self._hashed_password == self._hash(password)
+    def verify_password(self, password_from_json):
+        return self._hashed_password == password_from_json
 
     def change_password(self, new_password):
         self.password = new_password
