@@ -91,9 +91,9 @@ class Wallet:
     
 class Portfolio:
     """Управление всеми кошельками одного пользователя"""
-    def __init__(self, user_id: int):
+    def __init__(self, user_id: int, wallets: dict[str, Wallet] | None = None):
         self._user_id = user_id
-        self._wallets: dict[str, Wallet] = {}
+        self._wallets: dict[str, Wallet] = wallets or {}
 
     @property
     def user(self):
