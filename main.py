@@ -1,7 +1,10 @@
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+
+from valutatrade_hub.cli.interface import run_cli
+
 def main():
-    print("hello")  # <-- печатаем в консоль
-    return 0        # <-- корректный код выхода
+    run_cli()  # просто запускаем CLI, ничего не возвращаем
 
 if __name__ == "__main__":
-    import sys
-    sys.exit(main())  # передаём код выхода в систему
+    main()
