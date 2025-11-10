@@ -12,5 +12,13 @@
                 "balance": 200.0
             }
         }
+    },
+    {
+        "user_id": 2,
+        "wallets": {}
+    },
+    {
+        "user_id": 3,
+        "wallets": {}
     }
 ]

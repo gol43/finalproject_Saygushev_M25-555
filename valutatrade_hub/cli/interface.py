@@ -1,4 +1,3 @@
-# D:\cod\Dev\Dev-v1\yo-yo\finalproject_Saygushev_M25-555\valutatrade_hub\cli\interface.py
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))

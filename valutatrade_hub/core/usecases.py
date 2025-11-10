@@ -1,4 +1,3 @@
-# D:\cod\Dev\Dev-v1\yo-yo\finalproject_Saygushev_M25-555\valutatrade_hub\core\usecases.py
 import sys
 import os
 from tabnanny import check
@@ -8,9 +7,18 @@ from core.utils import load_json, save_json, is_fresh, fetch_rate
 from core.models import User, Portfolio, Wallet
 from core.exceptions import InsufficientFundsError, CurrencyNotFoundError, ApiRequestError
 
-USERS_FILE = "users.json"
-PORTFOLIOS_FILE = "portfolios.json"
-RATES_FILE = "rates.json"
+from infra.settings import SettingsLoader
+from pathlib import Path
+
+
+settings = SettingsLoader()
+USERS_FILE = settings.get("data_path") / "users.json"
+PORTFOLIOS_FILE = settings.get("data_path") / "portfolios.json"
+RATES_FILE = settings.get("data_path") / "rates.json"
+
+RATES_TTL = settings.get("rates_ttl_seconds")
+DEFAULT_BASE_CURRENCY = settings.get("default_base_currency")
+LOG_PATH = settings.get("log_path")
 
 SALT = "haleluya2003"
 
