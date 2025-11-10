@@ -1,10 +1,14 @@
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from core.usecases import register, login, show_portfolio, buy, sell, get_rate
-
-from core.exceptions import InsufficientFundsError, CurrencyNotFoundError, ApiRequestError
+from core.exceptions import (
+    ApiRequestError,
+    CurrencyNotFoundError,
+    InsufficientFundsError,
+)
+from core.usecases import buy, get_rate, login, register, sell, show_portfolio
 
 
 def process_command(command: str, current_user_id: int | None):
@@ -164,13 +168,13 @@ def process_command(command: str, current_user_id: int | None):
     
 
 def show_help():
-    return (f'у нас есть следующие команды:\n'
-            f'1. зарегистрироваться (register);\n'
-            f'2. войти в систему (login);\n'
-            f'3. посмотреть свой портфель и балансы (show-portfolio);\n'
-            f'4. купить валюту (buy);\n'
-            f'5. продать валюту (sell);\n'
-            f'6. получить курс валюты (get-rate).')
+    return ('у нас есть следующие команды:\n'
+            '1. зарегистрироваться (register);\n'
+            '2. войти в систему (login);\n'
+            '3. посмотреть свой портфель и балансы (show-portfolio);\n'
+            '4. купить валюту (buy);\n'
+            '5. продать валюту (sell);\n'
+            '6. получить курс валюты (get-rate).')
 
 
 def get_input(prompt="> "):

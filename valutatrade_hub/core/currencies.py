@@ -1,6 +1,5 @@
-from models import Currency, FiatCurrency, CryptoCurrency
-from exceptions import CurrencyNotFoundError
-
+from core.exceptions import CurrencyNotFoundError
+from core.models import CryptoCurrency, Currency, FiatCurrency
 
 CURRENCY_REGISTRY = {
     "USD": FiatCurrency("US Dollar", "USD", "United States"),
@@ -17,10 +16,6 @@ def get_currency(code: str) -> Currency:
     normalized = code.strip().upper()
 
     if normalized not in CURRENCY_REGISTRY:
-        raise CurrencyNotFoundError(f"Валюта '{normalized}' не найдена в реестре.")
+        raise CurrencyNotFoundError(f"Неизвестная валюта '{normalized}")
 
     return CURRENCY_REGISTRY[normalized]
-
-
-print(get_currency('usd').get_display_info())
-print(get_currency('btc').get_display_info())

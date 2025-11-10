@@ -1,15 +1,19 @@
-import sys
 import os
-from tabnanny import check
+import sys
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from core.utils import load_json, save_json, is_fresh, fetch_rate
-from core.models import User, Portfolio, Wallet
-from core.exceptions import InsufficientFundsError, CurrencyNotFoundError, ApiRequestError
-
-from infra.settings import SettingsLoader
+from core.currencies import get_currency
+from core.exceptions import (
+    ApiRequestError,
+    CurrencyNotFoundError,
+    InsufficientFundsError,
+)
+from core.models import Portfolio, User, Wallet
+from core.utils import fetch_rate, is_fresh
 from decorators import log_action
-
+from infra.database import DatabaseManager
+from infra.settings import SettingsLoader
 
 settings = SettingsLoader()
 USERS_FILE = settings.get("data_path") / "users.json"
@@ -18,10 +22,11 @@ RATES_FILE = settings.get("data_path") / "rates.json"
 
 RATES_TTL = settings.get("rates_ttl_seconds")
 DEFAULT_BASE_CURRENCY = settings.get("default_base_currency")
-LOG_FILE = settings.get("data_path") / "actions.log"
+LOG_FILE = settings.get("log_path")
 
 SALT = "haleluya2003"
 
+db = DatabaseManager()
 
 def register(username: str, password: str):
     if not username:
@@ -29,7 +34,7 @@ def register(username: str, password: str):
     if len(password) < 4:
         return "Ошибка: пароль должен быть длиной не менее 4 символов."
     
-    user_data = load_json(USERS_FILE)
+    user_data = db.load_json(USERS_FILE)
     if user_data:
         for i in user_data:
             if i['username'] == username:
@@ -49,7 +54,7 @@ def register(username: str, password: str):
     user_data.append(user_model_data)
     
     
-    portfolio_data = load_json(PORTFOLIOS_FILE)
+    portfolio_data = db.load_json(PORTFOLIOS_FILE)
     
     portfolio_model = Portfolio(user_id=user_id, wallets={})
     
@@ -59,15 +64,17 @@ def register(username: str, password: str):
     }
     portfolio_data.append(portfolio_model_data)
     
-    save_json(PORTFOLIOS_FILE, portfolio_data)
-    save_json(USERS_FILE, user_data)
+    db.save_json(PORTFOLIOS_FILE, portfolio_data)
+    db.save_json(USERS_FILE, user_data)
     
-    msg = f"Пользователь '{user_model._username}' зарегистрирован (id={user_model._user_id}). Войдите: login --username {user_model._username} --password ****"
+    msg = (f"Пользователь '{user_model._username}' зарегистрирован "
+          f"(id={user_model._user_id}). "
+          f"Войдите: login --username {user_model._username} --password ****")
     return msg
 
 
 def login(username: str, password: str):
-    user_data = load_json(USERS_FILE)
+    user_data = db.load_json(USERS_FILE)
 
     user_data_json = None
     for user in user_data:
@@ -78,7 +85,10 @@ def login(username: str, password: str):
         return None, f"Пользователь '{username}' не найден."
     else:
         try:
-            user_model = User(user_id=user_data_json["user_id"], username=username, password=password, salt=SALT)
+            user_model = User(user_id=user_data_json["user_id"],
+                              username=username,
+                              password=password,
+                              salt=SALT)
         except ValueError as e:
             return None, str(e)
         if not user_model.verify_password(user_data_json["hashed_password"]):
@@ -89,14 +99,14 @@ def login(username: str, password: str):
 
 
 def show_portfolio(user_id: int, base_currency: str = "USD"):
-    exchange_rates_json = load_json(RATES_FILE)
+    exchange_rates_json = db.load_json(RATES_FILE)
     base_key = f"{base_currency}_USD"
     if base_key not in exchange_rates_json and base_currency != "USD":
         return f"Неизвестная базовая валюта '{base_currency}'"
 
     base_rate = 1.0 if base_currency == "USD" else exchange_rates_json[base_key]["rate"]
     
-    portfolio = load_json(PORTFOLIOS_FILE)
+    portfolio = db.load_json(PORTFOLIOS_FILE)
     
     for i in portfolio:
         if i["user_id"] == user_id:
@@ -112,10 +122,11 @@ def show_portfolio(user_id: int, base_currency: str = "USD"):
     
     for currency_code, info in wallets_map.items():
         balance_value = info.get('balance', 0.0)
-        wallets[currency_code] = Wallet(currency_code=currency_code, balance=balance_value)
+        wallets[currency_code] = Wallet(currency_code=currency_code,
+                                        balance=balance_value)
     user_portfolio = Portfolio(user_id=user_id, wallets=wallets)
 
-    user_data = load_json(USERS_FILE)
+    user_data = db.load_json(USERS_FILE)
     for i in user_data:
         if i["user_id"] == user_id:
             username = i["username"]
@@ -124,10 +135,19 @@ def show_portfolio(user_id: int, base_currency: str = "USD"):
     lines = [f"Портфель пользователя '{username}' (база: {base_currency}):"]
     total = 0.0
     for currency_code, wallet in user_portfolio.wallets.items():
-        rate = 1.0 if currency_code == "USD" else exchange_rates_json[f"{currency_code}_USD"]["rate"]
+        if currency_code == "USD":
+            rate = 1.0
+        else:
+            rate_key = f"{currency_code}_USD"
+            if rate_key in exchange_rates_json:
+                rate = exchange_rates_json[rate_key]["rate"]
+            else:
+                rate = 0.0
         converted = wallet.balance * rate / base_rate
-        lines.append(f"- {currency_code}: {wallet.balance:.2f} → {converted:.2f} {base_currency}")
+        lines.append(f"- {currency_code}: {wallet.balance:.2f} "
+                     f"→ {converted:.2f} {base_currency}")
         total += converted
+
 
     lines.append("-" * 35)
     lines.append(f"ИТОГО: {total:.2f} {base_currency}")
@@ -137,17 +157,20 @@ def show_portfolio(user_id: int, base_currency: str = "USD"):
     
 @log_action("BUY", verbose=True)
 def buy(user_id: int, currency_code: str, amount: str):
-    exchange_rates_json = load_json(RATES_FILE)
+    exchange_rates_json = db.load_json(RATES_FILE)
     rate_key = f"{currency_code}_USD"
+    
+    currency = get_currency(currency_code).get_display_info()
+    if not currency:
+        raise CurrencyNotFoundError(f"Неизвестная валюта '{currency_code}")
 
     if currency_code == "USD":
         rate = 1.0
     else:
         if rate_key not in exchange_rates_json:
-            raise CurrencyNotFoundError(f"Не удалось получить курс '{currency_code}→USD'")
+            return f"Не удалось получить курс '{currency_code}→USD'"
         rate = exchange_rates_json[rate_key]["rate"]
-    
-    portfolios_json = load_json(PORTFOLIOS_FILE)
+    portfolios_json = db.load_json(PORTFOLIOS_FILE)
     
     for p in portfolios_json:
         if p["user_id"] == user_id:
@@ -168,12 +191,13 @@ def buy(user_id: int, currency_code: str, amount: str):
 
     wallets_map[currency_code]["balance"] = new_balance
 
-    save_json(PORTFOLIOS_FILE, portfolios_json)
+    db.save_json(PORTFOLIOS_FILE, portfolios_json)
 
     cost_usd = amount * rate
 
     return (
-        f"Покупка выполнена: {amount:.4f} {currency_code} по курсу {rate:.2f} USD/{currency_code}\n"
+        f"Покупка выполнена: {amount:.4f} {currency_code}"
+        f"по курсу {rate:.2f} USD/{currency_code}\n"
         f"- {currency_code}: было {old_balance:.4f} → стало {new_balance:.4f}\n"
         f"Стоимость покупки: {cost_usd:,.2f} USD"
     )
@@ -181,17 +205,21 @@ def buy(user_id: int, currency_code: str, amount: str):
 
 @log_action("SELL", verbose=True)
 def sell(user_id: int, currency_code: str, amount: float):
-    exchange_rates = load_json(RATES_FILE)
+    exchange_rates = db.load_json(RATES_FILE)
     rate_key = f"{currency_code}_USD"
 
+    currency = get_currency(currency_code).get_display_info()
+    if not currency:
+        raise CurrencyNotFoundError(f"Неизвестная валюта '{currency_code}")
+        
     if currency_code == "USD":
         rate = 1.0
     else:
         if rate_key not in exchange_rates:
-            raise CurrencyNotFoundError(f"Не удалось получить курс '{currency_code}→USD'")
+            return (f"Не удалось получить курс '{currency_code}→USD'")
         rate = exchange_rates[rate_key]["rate"]
 
-    portfolios_json = load_json(PORTFOLIOS_FILE)
+    portfolios_json = db.load_json(PORTFOLIOS_FILE)
 
     for rec in portfolios_json:
         if rec["user_id"] == user_id:
@@ -201,7 +229,8 @@ def sell(user_id: int, currency_code: str, amount: float):
     wallets_map: dict = portfolio_record.get("wallets", {})
 
     if currency_code not in wallets_map:
-        return f"У вас нет кошелька '{currency_code}'. Добавьте валюту: она создаётся автоматически при первой покупке."
+        return (f"У вас нет кошелька '{currency_code}'. "
+               f"Добавьте валюту: она создаётся автоматически при первой покупке.")
 
     wallets = {}
     for code, info in wallets_map.items():
@@ -222,12 +251,13 @@ def sell(user_id: int, currency_code: str, amount: float):
     new_balance = wallet.balance
 
     portfolio_record["wallets"][currency_code]["balance"] = new_balance
-    save_json(PORTFOLIOS_FILE, portfolios_json)
+    db.save_json(PORTFOLIOS_FILE, portfolios_json)
 
     profit_usd = amount * rate
 
     return (
-        f"Продажа выполнена: {amount:.4f} {currency_code} по курсу {rate:.2f} USD/{currency_code}\n"
+        f"Продажа выполнена: {amount:.4f} {currency_code} "
+        f"по курсу {rate:.2f} USD/{currency_code}\n"
         f"Изменения в портфеле:\n"
         f"- {currency_code}: было {old_balance:.2f} → стало {new_balance:.2f}\n"
         f"Оценочная выручка: {profit_usd:,.2f} USD"
@@ -235,7 +265,7 @@ def sell(user_id: int, currency_code: str, amount: float):
 
 
 def get_rate(from_code: str, to_code: str):
-    exchange_rates = load_json(RATES_FILE)
+    exchange_rates = db.load_json(RATES_FILE)
     key = f"{from_code}_{to_code}"
 
     if key not in exchange_rates:
@@ -245,6 +275,7 @@ def get_rate(from_code: str, to_code: str):
     if not is_fresh(rate_data['updated_at']):
         try:
             new_rate = fetch_rate(from_code, to_code)  # Заглушка для API
+            print(new_rate)
         except Exception as e:
             raise ApiRequestError(f"Ошибка при обращении к внешнему API: {e}")
 

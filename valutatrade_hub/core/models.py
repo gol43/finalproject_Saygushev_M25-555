@@ -1,7 +1,6 @@
 import hashlib
-from datetime import datetime
-
 from abc import ABC, abstractmethod
+from datetime import datetime
 
 
 class User:
@@ -164,7 +163,8 @@ class Currency(ABC):
             raise TypeError("code должен быть str.")
         value = value.strip().upper()
         if not (2 <= len(value) <= 5) or " " in value:
-            raise ValueError("code должен быть 2–5 символов, верхний регистр, без пробелов.")
+            raise ValueError("code должен быть 2–5 символов, "
+                             "верхний регистр, без пробелов.")
         self._code = value
 
     @abstractmethod
