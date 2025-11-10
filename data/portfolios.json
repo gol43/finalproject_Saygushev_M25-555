@@ -20,5 +20,13 @@
     {
         "user_id": 3,
         "wallets": {}
+    },
+    {
+        "user_id": 4,
+        "wallets": {
+            "BTC": {
+                "balance": 12.0
+            }
+        }
     }
 ]

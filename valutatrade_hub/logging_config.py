@@ -1,6 +1,6 @@
 import logging
 from logging.handlers import RotatingFileHandler
-from pathlib import Path
+
 from infra.settings import SettingsLoader
 
 settings = SettingsLoader()
