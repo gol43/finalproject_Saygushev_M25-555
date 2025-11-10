@@ -8,7 +8,7 @@ from core.models import User, Portfolio, Wallet
 from core.exceptions import InsufficientFundsError, CurrencyNotFoundError, ApiRequestError
 
 from infra.settings import SettingsLoader
-from pathlib import Path
+from decorators import log_action
 
 
 settings = SettingsLoader()
@@ -18,7 +18,7 @@ RATES_FILE = settings.get("data_path") / "rates.json"
 
 RATES_TTL = settings.get("rates_ttl_seconds")
 DEFAULT_BASE_CURRENCY = settings.get("default_base_currency")
-LOG_PATH = settings.get("log_path")
+LOG_FILE = settings.get("data_path") / "actions.log"
 
 SALT = "haleluya2003"
 
@@ -64,7 +64,6 @@ def register(username: str, password: str):
     
     msg = f"Пользователь '{user_model._username}' зарегистрирован (id={user_model._user_id}). Войдите: login --username {user_model._username} --password ****"
     return msg
-
 
 
 def login(username: str, password: str):
@@ -136,7 +135,7 @@ def show_portfolio(user_id: int, base_currency: str = "USD"):
     return "\n".join(lines)
     
     
-
+@log_action("BUY", verbose=True)
 def buy(user_id: int, currency_code: str, amount: str):
     exchange_rates_json = load_json(RATES_FILE)
     rate_key = f"{currency_code}_USD"
@@ -180,6 +179,7 @@ def buy(user_id: int, currency_code: str, amount: str):
     )
 
 
+@log_action("SELL", verbose=True)
 def sell(user_id: int, currency_code: str, amount: float):
     exchange_rates = load_json(RATES_FILE)
     rate_key = f"{currency_code}_USD"
