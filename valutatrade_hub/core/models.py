@@ -1,4 +1,3 @@
-# D:\cod\Dev\Dev-v1\yo-yo\finalproject_Saygushev_M25-555\valutatrade_hub\core\models.py
 import hashlib
 from datetime import datetime
 

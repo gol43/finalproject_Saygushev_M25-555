@@ -31,3 +31,8 @@ exclude = ["venv", ".venv", "dist", "__pycache__"]
 [tool.ruff.lint]
 select = ["E", "F", "I"]
 ignore = []
+
+[tool.valutatrade]
+data_path = "data"
+rates_ttl_seconds = 3600
+default_base_currency = "USD"
