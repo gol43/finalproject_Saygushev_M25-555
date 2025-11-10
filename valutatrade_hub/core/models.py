@@ -1,6 +1,8 @@
 import hashlib
 from datetime import datetime
 
+from abc import ABC, abstractmethod
+
 
 class User:
     """Пользователь системы"""
@@ -130,3 +132,103 @@ class Portfolio:
             rate = exchange_rates.get(wallet.currency_code, 0)
             total += wallet.balance * rate / base_rate
         return total
+
+
+
+class Currency(ABC):
+    """Абстрактный класс валюты"""
+    def __init__(self, name: str, code: str):
+        self.name = name
+        self.code = code
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @name.setter
+    def name(self, value: str) -> None:
+        if not isinstance(value, str):
+            raise TypeError("name должен быть str.")
+        value = value.strip()
+        if not value:
+            raise ValueError("name не может быть пустым.")
+        self._name = value
+
+    @property
+    def code(self) -> str:
+        return self._code
+
+    @code.setter
+    def code(self, value: str) -> None:
+        if not isinstance(value, str):
+            raise TypeError("code должен быть str.")
+        value = value.strip().upper()
+        if not (2 <= len(value) <= 5) or " " in value:
+            raise ValueError("code должен быть 2–5 символов, верхний регистр, без пробелов.")
+        self._code = value
+
+    @abstractmethod
+    def get_display_info(self) -> str:
+        pass
+
+
+class FiatCurrency(Currency):
+    """Фиатная валюта"""
+    def __init__(self, name: str, code: str, issuing_country: str):
+        super().__init__(name, code)
+        self.issuing_country = issuing_country
+
+    @property
+    def issuing_country(self) -> str:
+        return self._issuing_country
+
+    @issuing_country.setter
+    def issuing_country(self, value: str) -> None:
+        if not isinstance(value, str):
+            raise TypeError("issuing_country должен быть str.")
+        value = value.strip()
+        if not value:
+            raise ValueError("issuing_country не может быть пустым.")
+        self._issuing_country = value
+
+    def get_display_info(self) -> str:
+        return f"[FIAT] {self.code} — {self.name} (Issuing: {self.issuing_country})"
+
+
+class CryptoCurrency(Currency):
+    """Криптовалюта"""
+    def __init__(self, name: str, code: str, algorithm: str, market_cap: float):
+        super().__init__(name, code)
+        self.algorithm = algorithm
+        self.market_cap = market_cap
+
+    @property
+    def algorithm(self) -> str:
+        return self._algorithm
+
+    @algorithm.setter
+    def algorithm(self, value: str) -> None:
+        if not isinstance(value, str):
+            raise TypeError("algorithm должен быть str.")
+        value = value.strip()
+        if not value:
+            raise ValueError("algorithm не может быть пустым.")
+        self._algorithm = value
+
+    @property
+    def market_cap(self) -> float:
+        return self._market_cap
+
+    @market_cap.setter
+    def market_cap(self, value: float) -> None:
+        if not isinstance(value, (int, float)):
+            raise TypeError("market_cap должен быть числом.")
+        if value < 0:
+            raise ValueError("market_cap должен быть ≥ 0.")
+        self._market_cap = float(value)
+
+    def get_display_info(self) -> str:
+        return (
+            f"[CRYPTO] {self.code} — {self.name} "
+            f"(Algo: {self.algorithm}, MCAP: {self.market_cap:.2e})"
+        )
