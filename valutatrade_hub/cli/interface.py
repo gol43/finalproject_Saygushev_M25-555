@@ -1,8 +1,11 @@
+# D:\cod\Dev\Dev-v1\yo-yo\finalproject_Saygushev_M25-555\valutatrade_hub\cli\interface.py
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from core.usecases import register, login, show_portfolio, buy, sell, get_rate
+
+from core.exceptions import InsufficientFundsError, CurrencyNotFoundError, ApiRequestError
 
 
 def process_command(command: str, current_user_id: int | None):
@@ -81,9 +84,15 @@ def process_command(command: str, current_user_id: int | None):
         if args["amount"] < 0:
             print("'amount' должен быть положительным числом")
             return True, current_user_id
-        
-        msg = buy(current_user_id, args["currency"], args["amount"])
-        print(msg)        
+                
+        try:
+            msg = buy(current_user_id, args["currency"], args["amount"])
+        except CurrencyNotFoundError as e:
+            msg = f"{e}\nСправка: используйте help."
+        except Exception as e:
+            msg = str(e)
+
+        print(msg)
         return True, current_user_id
         
     elif command.startswith('sell'):
@@ -107,7 +116,15 @@ def process_command(command: str, current_user_id: int | None):
             print("'amount' должен быть положительным числом")
             return True, current_user_id
 
-        msg = sell(current_user_id, args["currency"], args["amount"])
+        try:
+            msg = sell(current_user_id, args["currency"], args["amount"])
+        except InsufficientFundsError as e:
+            msg = str(e)
+        except CurrencyNotFoundError as e:
+            msg = f"{e}\nСправка: используйте help."
+        except Exception as e:
+            msg = str(e)
+
         print(msg)
         return True, current_user_id
         
@@ -125,10 +142,15 @@ def process_command(command: str, current_user_id: int | None):
             print("Использование: get-rate --from CODE --to CODE")
             return True, current_user_id
 
-        from_code = args["from"]
-        to_code = args["to"]
+        try:
+            msg = get_rate(args["from"], args["to"])
+        except CurrencyNotFoundError as e:
+            msg = f"{e}\nСправка: используйте help."
+        except ApiRequestError as e:
+            msg = f"{e}\nПопробуйте позже или проверьте соединение с сетью."
+        except Exception as e:
+            msg = str(e)
 
-        msg = get_rate(from_code, to_code)
         print(msg)
         return True, current_user_id
 

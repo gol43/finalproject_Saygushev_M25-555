@@ -1,3 +1,4 @@
+# D:\cod\Dev\Dev-v1\yo-yo\finalproject_Saygushev_M25-555\valutatrade_hub\core\usecases.py
 import sys
 import os
 from tabnanny import check
@@ -5,6 +6,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from core.utils import load_json, save_json, is_fresh, fetch_rate
 from core.models import User, Portfolio, Wallet
+from core.exceptions import InsufficientFundsError, CurrencyNotFoundError, ApiRequestError
 
 USERS_FILE = "users.json"
 PORTFOLIOS_FILE = "portfolios.json"
@@ -135,7 +137,7 @@ def buy(user_id: int, currency_code: str, amount: str):
         rate = 1.0
     else:
         if rate_key not in exchange_rates_json:
-            return f"Не удалось получить курс '{currency_code}→USD'"
+            raise CurrencyNotFoundError(f"Не удалось получить курс '{currency_code}→USD'")
         rate = exchange_rates_json[rate_key]["rate"]
     
     portfolios_json = load_json(PORTFOLIOS_FILE)
@@ -178,7 +180,7 @@ def sell(user_id: int, currency_code: str, amount: float):
         rate = 1.0
     else:
         if rate_key not in exchange_rates:
-            return f"Не удалось получить курс '{currency_code}→USD'"
+            raise CurrencyNotFoundError(f"Не удалось получить курс '{currency_code}→USD'")
         rate = exchange_rates[rate_key]["rate"]
 
     portfolios_json = load_json(PORTFOLIOS_FILE)
@@ -202,11 +204,11 @@ def sell(user_id: int, currency_code: str, amount: float):
     old_balance = wallet.balance
 
     if amount > old_balance:
-        return (
-            f"Недостаточно средств: доступно {old_balance:.2f} {currency_code}, "
+        raise InsufficientFundsError(
+            f"Недостаточно средств: доступно {old_balance:.2f} {currency_code},"
             f"требуется {amount:.2f}"
         )
-
+        
     wallet.withdraw(amount)
 
     new_balance = wallet.balance
@@ -226,26 +228,22 @@ def sell(user_id: int, currency_code: str, amount: float):
 
 def get_rate(from_code: str, to_code: str):
     exchange_rates = load_json(RATES_FILE)
-    first_ex = from_code + '_' + to_code
-    rate_data = None
-    for i in exchange_rates:
-        if i == first_ex:
-            rate_data = i
-            break
-    if not rate_data:
-        return (f'Нет данных и недоступен Parser →'
-                f'Курс {from_code}→{to_code} недоступен. Повторите попытку позже.')
-    
-    check_fresh_rate = is_fresh(exchange_rates[rate_data]['updated_at'])
-    if not check_fresh_rate:
-        print('достаём типо новые данные')
-        fetch_rate(from_code, to_code)
-        # тут должна быть логика, где мы меняем exchange_rates[rate_data]['rate'] на новые данные
-        # это мы напишем позже, когда дойдём до парсера.
-    
-    key_from, key_to = rate_data.split('_')
-    rate = exchange_rates[rate_data]['rate']
+    key = f"{from_code}_{to_code}"
+
+    if key not in exchange_rates:
+        raise CurrencyNotFoundError(f"Неизвестная валюта '{from_code}' или '{to_code}'")
+
+    rate_data = exchange_rates[key]
+    if not is_fresh(rate_data['updated_at']):
+        try:
+            new_rate = fetch_rate(from_code, to_code)  # Заглушка для API
+        except Exception as e:
+            raise ApiRequestError(f"Ошибка при обращении к внешнему API: {e}")
+
+    rate = rate_data['rate']
     reverse = 1.0 / rate
-    if key_from == from_code:
-        return (f'Курс {from_code}->{to_code}: {rate} (обновленно: {exchange_rates[rate_data]['updated_at']})\n'
-                f'Обратный курс {to_code}->{from_code}: {reverse:.8f}')
+
+    return (
+        f'Курс {from_code}->{to_code}: {rate} (обновлено: {rate_data["updated_at"]})\n'
+        f'Обратный курс {to_code}->{from_code}: {reverse:.8f}'
+    )
