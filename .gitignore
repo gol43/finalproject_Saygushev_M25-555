@@ -211,3 +211,4 @@ __pycache__/
 .env
 .venv
 dist
+.ruff_cache

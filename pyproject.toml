@@ -12,6 +12,9 @@ packages = [
 [tool.poetry.dependencies]
 python = ">=3.12"
 prettytable = "^3.5"
+requests = "^2.31"
+python-dotenv = "^1.2.1"
+schedule = "^1.2.2"
 
 [tool.poetry.group.dev.dependencies]
 ruff = ">=0.13.2,<0.14.0"
@@ -24,7 +27,7 @@ requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
-line-length = 88
+line-length = 120
 target-version = "py311"
 exclude = ["venv", ".venv", "dist", "__pycache__"]
 
@@ -34,5 +37,7 @@ ignore = []
 
 [tool.valutatrade]
 data_path = "data"
-rates_ttl_seconds = 3600
+rates_ttl_seconds = 300
 default_base_currency = "USD"
+log_path = "data/actions.log"
+parser_log_path = "data/parser.log"

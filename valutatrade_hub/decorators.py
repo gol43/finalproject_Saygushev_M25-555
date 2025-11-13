@@ -1,35 +1,34 @@
-from functools import wraps
+import logging
 
-from logging_config import logger
-
+logger = logging.getLogger("actions")
 
 def log_action(action: str, *, verbose: bool = False):
     def decorator(func):
-        @wraps(func)
         def wrapper(*args, **kwargs):
-            user_id = kwargs.get("user_id") or (args[0] if args else None)
-            amount = kwargs.get("amount") or (args[2] if len(args) > 2 else None)
-
-            currency_code = None
-            if len(args) > 1:
+            user_id = kwargs.get("user_id")
+            if not user_id and len(args) > 0:
+                user_id = args[0]
+            amount = kwargs.get("amount")
+            if amount is None and len(args) > 2:
+                amount = args[2]
+            currency_code = kwargs.get("currency_code")
+            if not currency_code and len(args) > 1:
                 currency_code = args[1]
-            if "currency_code" in kwargs:
-                currency_code = kwargs["currency_code"]
-                
             try:
                 result = func(*args, **kwargs)
-                msg = (f"{action} user_id={user_id} currency={currency_code} "
-                       f"amount={amount} result=OK")
-                if verbose:
-                    msg += f" verbose={result}"
+                msg = (f"{action} user_id={user_id} "
+                       f"currency={currency_code} amount={amount} result=OK")
+                if verbose and isinstance(result, str):
+                    clean_result = result.replace("\n", " ").replace("'", '"')
+                    msg += f" verbose={clean_result}"
                 logger.info(msg)
                 return result
             except Exception as e:
-                msg = (f"{action} user_id={user_id} currency={currency_code} "
-                       f"amount={amount} result=ERROR error_type={type(e).__name__} "
-                       f"message='{str(e).replace('→','->')}'")
+                msg = (
+                    f"{action} user_id={user_id} currency={currency_code} "
+                    f"amount={amount} result=ERROR "
+                    f"error_type={type(e).__name__} message='{str(e)}'")
                 logger.error(msg)
                 raise
         return wrapper
     return decorator
-

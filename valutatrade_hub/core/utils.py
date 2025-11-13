@@ -1,30 +1,30 @@
-import json
 import os
 from datetime import datetime, timedelta
 
+from constants import RATES_TTL
+from infra.database import DatabaseManager
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# нужно для правильной работы импортов
 
-def load_json(path_income):
-    path = os.path.join(BASE_DIR, 'data', path_income)
-    if not os.path.exists(path):
-        return []
-    with open(path, "r", encoding="utf-8") as f:
-        try:
-            return json.load(f)
-        except json.JSONDecodeError:
-            return []
-
-def save_json(path_income, data):
-    path = os.path.join(BASE_DIR, 'data', path_income)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=4, ensure_ascii=False)
-
+db = DatabaseManager()
 
 def is_fresh(ts_str):
-    ts = datetime.fromisoformat(ts_str)
-    return datetime.now() - ts < timedelta(minutes=5)
-
-
-def fetch_rate(from_code, to_code):
-    # Заглушка на реальный ParserService, пока не понятно чё писать то.
-    return None
+    """Проверка на актуальность курса валют"""
+    # Тут я нашёл крупный Баг, при update-rates
+    # у меня всегда выводилось неправильное время
+    # Условно API выводило 2025-11-11T20:01:48
+    # А по моим часам было 2025-11-11T22:01:48
+    # То есть тут два часа разницы.
+    # Из-за этого при get-rate всегда приходилось
+    # выводить сообщение об неактуальности данных
+    if not ts_str or ts_str == "неизвестно":
+        return False
+    try:
+        ts_api = datetime.fromisoformat(ts_str)
+        now_local = datetime.now()
+        now_utc = now_local - timedelta(hours=2)
+        return now_utc - ts_api < timedelta(seconds=RATES_TTL)
+    except Exception as e:
+        print(f"Ошибка парсинга времени: {e}")
+        return False

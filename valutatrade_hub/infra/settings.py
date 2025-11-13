@@ -4,6 +4,7 @@ from typing import Any
 
 
 class SettingsLoader:
+    """Синглтон для работы с переменными из настроек"""
     _instance = None
     _config_path = Path(__file__).parent.parent.parent / "pyproject.toml"
     _project_root = Path(__file__).parent.parent.parent
@@ -28,12 +29,15 @@ class SettingsLoader:
         self._config = toml_data.get("tool", {}).get("valutatrade", {})
 
         self._config.setdefault("data_path", "data")
-        self._config.setdefault("rates_ttl_seconds", 3600)
+        self._config.setdefault("rates_ttl_seconds", 300)
         self._config.setdefault("default_base_currency", "USD")
+
         self._config.setdefault("log_path", "logs/actions.log")
+        self._config.setdefault("parser_log_path", "data/parser.log")
 
         self._config["data_path"] = self._project_root / self._config["data_path"]
         self._config["log_path"] = self._project_root / self._config["log_path"]
+        self._config["parser_log_path"]=self._project_root / self._config["parser_log_path"]
     
     def get(self, key: str, default: Any = None) -> Any:
         return self._config.get(key, default)
