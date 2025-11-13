@@ -2,6 +2,8 @@ import hashlib
 from abc import ABC, abstractmethod
 from datetime import datetime
 
+from constants import DEFAULT_BASE_CURRENCY
+
 
 class User:
     """Пользователь системы"""
@@ -117,14 +119,13 @@ class Portfolio:
             raise KeyError(f"Кошелёк для {code} не найден.")
         return self._wallets[code]
 
-    def get_total_value(self, base_currency='USD', exchange_rates=None):
+    def get_total_value(self, base_currency=DEFAULT_BASE_CURRENCY, exchange_rates=None):
         """Возвращает суммарную стоимость всех кошельков в базовой валюте"""
         if exchange_rates is None:
             exchange_rates = {
                 'USD': 1.0,
                 'BTC': 30000.0,
-                'EUR': 1.1
-            }
+                'EUR': 1.1}
         base_rate = exchange_rates.get(base_currency.upper(), 1.0)
         total = 0.0
         for wallet in self._wallets.values():
@@ -230,5 +231,4 @@ class CryptoCurrency(Currency):
     def get_display_info(self) -> str:
         return (
             f"[CRYPTO] {self.code} — {self.name} "
-            f"(Algo: {self.algorithm}, MCAP: {self.market_cap:.2e})"
-        )
+            f"(Algo: {self.algorithm}, MCAP: {self.market_cap:.2e})")

@@ -1,21 +1,23 @@
 import logging
-from logging.handlers import RotatingFileHandler
 
-from infra.settings import SettingsLoader
+from constants import ACTIONS_LOG, DATE_FORMAT, LOG_FORMAT, PARSER_LOG
 
-settings = SettingsLoader()
-log_file = settings.get("data_path") / "actions.log"
-log_file.parent.mkdir(exist_ok=True)
+parser_logger = logging.getLogger("parser")
+parser_logger.setLevel(logging.INFO)
+parser_logger.handlers.clear()
 
-handler = RotatingFileHandler(log_file, encoding="utf-8")
+console = logging.StreamHandler()
+console.setFormatter(logging.Formatter("INFO: %(message)s"))
+parser_logger.addHandler(console)
 
-formatter = logging.Formatter(
-    "%(levelname)s %(asctime)s %(message)s",
-    datefmt="%Y-%m-%dT%H:%M:%S"
-)
-handler.setFormatter(formatter)
+parser_file = logging.FileHandler(PARSER_LOG, encoding="utf-8")
+parser_file.setFormatter(logging.Formatter(LOG_FORMAT, datefmt=DATE_FORMAT[:-3]))
+parser_logger.addHandler(parser_file)
 
-logger = logging.getLogger("actions")
-logger.setLevel(logging.INFO)
-logger.addHandler(handler)
-logger.propagate = False
+actions_logger = logging.getLogger("actions")
+actions_logger.setLevel(logging.INFO)
+actions_logger.handlers.clear()
+
+actions_file = logging.FileHandler(ACTIONS_LOG, encoding="utf-8")
+actions_file.setFormatter(logging.Formatter(LOG_FORMAT, datefmt=DATE_FORMAT[:-3]))
+actions_logger.addHandler(actions_file)

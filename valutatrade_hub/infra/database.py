@@ -3,6 +3,7 @@ from pathlib import Path
 
 
 class DatabaseManager:
+    """Синглтон для работы с БД"""
     _instance = None
     BASE_DIR = Path(__file__).parent.parent.parent
 
@@ -15,11 +16,15 @@ class DatabaseManager:
         path = self.BASE_DIR / "data" / filename
         if not path.exists():
             return []
-        with path.open("r", encoding="utf-8") as f:
-            try:
-                return json.load(f)
-            except json.JSONDecodeError:
-                return []
+        try:
+            with path.open("r", encoding="utf-8") as f:
+                try:
+                    return json.load(f)
+                except json.JSONDecodeError:
+                    return []
+        except Exception as e:
+            print(f'С файлом есть проблемы: {e}')
+            return []
 
     def save_json(self, filename: str, data) -> None:
         path = self.BASE_DIR / "data" / filename
