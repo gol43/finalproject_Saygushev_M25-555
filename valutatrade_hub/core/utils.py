@@ -1,11 +1,8 @@
 import os
 from datetime import datetime, timedelta
 
-from constants import DEFAULT_BASE_CURRENCY, RATES_FILE, RATES_TTL
-from core.exceptions import ApiRequestError
+from constants import RATES_TTL
 from infra.database import DatabaseManager
-from parser_service.config import ParserConfig
-from parser_service.updater import RatesUpdater
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # нужно для правильной работы импортов
