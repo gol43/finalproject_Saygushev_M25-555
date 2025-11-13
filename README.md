@@ -7,9 +7,6 @@
 **Запись демо:**  
 [![asciinema demo](https://asciinema.org/a/0bBjvwDnzMLThrwH8wagoFfNH.svg)](https://asciinema.org/a/0bBjvwDnzMLThrwH8wagoFfNH)
 
-Или встроенное видео:
-<iframe width="100%" height="400" src="https://asciinema.org/embed/a/0bBjvwDnzMLThrwH8wagoFfNH?autoplay=1" frameborder="0"></iframe>
-
 
 ## 🚀 Установка
 
